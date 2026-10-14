@@ -2,56 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>STICKMAN STRIKE — MARTIAL CLASH</title>
   <link rel="stylesheet" href="style.css" />
   <!-- PeerJS for 2-PC Room Code WebRTC Multiplayer (gracefully degrades to Direct LAN WebRTC if offline) -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
 </head>
 <body>
+  <!-- MANDATORY ROTATE PHONE OVERLAY (Blocks screen on Mobile Portrait until rotated to Landscape) -->
+  <div class="rotate-phone-overlay" id="rotatePhoneOverlay">
+    <div class="rotate-card">
+      <div class="rotate-icon-anim">📱</div>
+      <h2 class="rotate-title">ROTATE YOUR PHONE</h2>
+      <p class="rotate-sub">খেলা শুরু করতে আপনার ফোনটি আড়াআড়ি (Landscape) করুন</p>
+      <span class="rotate-badge">LANDSCAPE MODE REQUIRED</span>
+    </div>
+  </div>
+
   <div class="game-wrapper">
-    <!-- Top In-Game Header Bar (Hidden on Home Menu, Shown in Match) -->
-    <header class="game-header" id="gameHeader" style="display: none;">
-      <div class="brand">
-        <span class="logo-icon">⚔️</span>
-        <h1 class="game-title">STICKMAN STRIKE <span class="tag">MARTIAL CLASH</span></h1>
-      </div>
-      <div class="header-actions">
-        <button id="btnMainMenu" class="action-btn" title="Return to Main Menu">🏠 Main Menu</button>
+    <!-- Full-Screen Arena Container -->
+    <div class="arena-container" id="arenaContainer">
 
-        <!-- Network Status Pill (Visible in Multiplayer Mode) -->
-        <button id="btnNetLobby" class="action-btn net-btn" style="display: none;" title="Open Multiplayer Lobby">
-          <span class="net-dot" id="netStatusDot"></span>
-          <span id="netStatusText">Multiplayer Lobby</span>
-        </button>
-
-        <div class="difficulty-picker" id="formatPickerWrap">
-          <label for="matchFormat">Format:</label>
-          <select id="matchFormat">
-            <option value="1" selected>1 Round (Single Match)</option>
-            <option value="2">Best of 3 Rounds</option>
-          </select>
+      <!-- Compact Top Floating Bar (Visible in Match) -->
+      <header class="game-header" id="gameHeader" style="display: none;">
+        <div class="header-left">
+          <button id="btnMainMenu" class="action-btn" title="Return to Main Menu">🏠 Menu</button>
+          <button id="btnNetLobby" class="action-btn net-btn" style="display: none;" title="Open Multiplayer Lobby">
+            <span class="net-dot" id="netStatusDot"></span>
+            <span id="netStatusText">Lobby</span>
+          </button>
         </div>
 
-        <div class="difficulty-picker" id="aiLevelWrap">
-          <label for="aiDifficulty">AI Level:</label>
-          <select id="aiDifficulty">
-            <option value="easy">Recruit (Easy)</option>
-            <option value="normal" selected>Warrior (Normal)</option>
-            <option value="hard">Master (Hard)</option>
-          </select>
+        <div class="header-actions">
+          <div class="difficulty-picker" id="formatPickerWrap">
+            <label for="matchFormat">Round:</label>
+            <select id="matchFormat">
+              <option value="1" selected>1 Round</option>
+              <option value="2">Best of 3</option>
+            </select>
+          </div>
+
+          <div class="difficulty-picker" id="aiLevelWrap">
+            <label for="aiDifficulty">AI:</label>
+            <select id="aiDifficulty">
+              <option value="easy">Easy</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+
+          <button id="btnFullscreen" class="icon-btn" title="Toggle Fullscreen">⛶</button>
+          <button id="btnSound" class="icon-btn" title="Toggle Sound">🔊</button>
+          <button id="btnControlsHeader" class="action-btn hide-on-mobile" title="View Controls">⌨️ Controls</button>
+          <button id="btnRestart" class="action-btn restart" title="Restart Match">🔄 Restart</button>
         </div>
+      </header>
 
-        <button id="btnTouchToggle" class="icon-btn" title="Toggle Mobile Touch Controls">📱</button>
-        <button id="btnSound" class="icon-btn" title="Toggle Sound">🔊</button>
-        <button id="btnControlsHeader" class="action-btn" title="View Controls">⌨️ Controls</button>
-        <button id="btnRestart" class="action-btn restart" title="Restart Match">🔄 Restart</button>
-      </div>
-    </header>
-
-    <!-- Main Arena Container -->
-    <div class="arena-container">
-      <!-- HOME PAGE / MAIN MENU OVERLAY (Shown immediately on app launch) -->
+      <!-- HOME PAGE / MAIN MENU OVERLAY (Full-screen responsive, never cuts off) -->
       <div class="home-menu-overlay" id="homeMenuOverlay">
         <div class="home-menu-card">
           <div class="home-title-block">
@@ -79,7 +86,7 @@
             </button>
             <button class="menu-btn mode-select-btn" id="btnStartMultiplayer">
               <span class="mode-title">🌐 Multiplayer</span>
-              <span class="mode-desc">2 PCs via Room Code or LAN (No AI)</span>
+              <span class="mode-desc">2 Devices via Room Code or LAN (No AI)</span>
             </button>
             <button class="menu-btn back-menu-btn" id="btnBackToMain">← Back</button>
           </div>
@@ -137,6 +144,44 @@
         </div>
       </div>
 
+      <!-- MOBILE ON-SCREEN OVERLAY CONTROLS: Left Analog Joystick + Right Streamlined Fight Buttons -->
+      <div class="mobile-hud-controls" id="mobileHudControls">
+        <!-- Left Side: Virtual Analog Joystick -->
+        <div class="joystick-zone" id="joystickZone">
+          <div class="joystick-base" id="joystickBase">
+            <div class="joystick-dir-hint hint-up">▲</div>
+            <div class="joystick-dir-hint hint-down">▼</div>
+            <div class="joystick-dir-hint hint-left">◀</div>
+            <div class="joystick-dir-hint hint-right">▶</div>
+            <div class="joystick-stick" id="joystickStick"></div>
+          </div>
+        </div>
+
+        <!-- Right Side: Essential Fighting Buttons Cluster -->
+        <div class="mobile-fight-cluster">
+          <button class="f-btn f-hop" id="mBtnHop" title="Hop">
+            <span class="f-icon">🦘</span>
+            <span class="f-label">HOP</span>
+          </button>
+          <button class="f-btn f-guard" id="mBtnGuard" title="Guard / Block">
+            <span class="f-icon">🛡️</span>
+            <span class="f-label">GUARD</span>
+          </button>
+          <button class="f-btn f-super" id="mBtnSuper" title="Super / Special">
+            <span class="f-icon">⚡</span>
+            <span class="f-label">SUPER</span>
+          </button>
+          <button class="f-btn f-punch" id="mBtnPunch" title="Punch Combo">
+            <span class="f-icon">👊</span>
+            <span class="f-label">PUNCH</span>
+          </button>
+          <button class="f-btn f-kick" id="mBtnKick" title="Kick / Sweep">
+            <span class="f-icon">🦵</span>
+            <span class="f-label">KICK</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Combo Announcements -->
       <div class="combo-banner p1-combo" id="p1ComboBanner">
         <span class="combo-count">0</span>
@@ -183,38 +228,6 @@
       <!-- Main Game Canvas -->
       <canvas id="gameCanvas" width="1280" height="720"></canvas>
     </div>
-
-    <!-- Mobile-Only Touch Gamepad (Hidden on PC, Auto-shown on Mobile/Touch Devices during Match) -->
-    <div class="mobile-touch-pad" id="mobileTouchPad">
-      <div class="m-dpad">
-        <div class="m-dpad-row">
-          <button class="m-btn m-hop" data-key="KeyQ">🦘 HOP</button>
-          <button class="m-btn m-dir" data-key="KeyW">⬆️ JUMP</button>
-          <button class="m-btn m-hop" data-key="Space">💨 DASH</button>
-        </div>
-        <div class="m-dpad-row">
-          <button class="m-btn m-dir" data-key="KeyA">⬅️</button>
-          <button class="m-btn m-dir" data-key="KeyS">⬇️ CROUCH</button>
-          <button class="m-btn m-dir" data-key="KeyD">➡️</button>
-        </div>
-      </div>
-
-      <div class="m-actions">
-        <div class="m-act-row">
-          <button class="m-btn m-sub" data-key="KeyH">HOOK</button>
-          <button class="m-btn m-sub" data-key="KeyY">UPPER</button>
-          <button class="m-btn m-sub" data-key="KeyO">KNEE</button>
-          <button class="m-btn m-super" data-key="KeyP">⚡ SUPER</button>
-        </div>
-        <div class="m-act-row">
-          <button class="m-btn m-atk" data-key="KeyJ">JAB</button>
-          <button class="m-btn m-atk" data-key="KeyU">CROSS</button>
-          <button class="m-btn m-atk" data-key="KeyK">LOW KICK</button>
-          <button class="m-btn m-atk" data-key="KeyL">HIGH KICK</button>
-          <button class="m-btn m-guard" data-key="KeyI">🛡️ GUARD</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- CONTROLS MODAL (Opened from Home Page "Controls" or In-Game Header) -->
@@ -226,7 +239,7 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          In <strong>Offline (AI)</strong> and <strong>Multiplayer (2-PC)</strong> modes, both players use the <strong>Player 1 Standard Keys</strong> on their own PC. In <strong>Offline (PvP)</strong> on a single PC, Player 1 uses the left side of the keyboard and Player 2 uses the Arrow &amp; Numpad/Right-side keys.
+          <strong>On PC:</strong> Use the keyboard keys below. <strong>On Mobile:</strong> Use the <strong>Left Virtual Joystick</strong> to move, jump, or crouch, and the <strong>Right Fight Buttons</strong> (<code>PUNCH</code>, <code>KICK</code>, <code>GUARD</code>, <code>HOP</code>, <code>SUPER</code>) to fight!
         </p>
 
         <div class="controls-summary-grid">
@@ -362,12 +375,12 @@
   <div class="modal-backdrop" id="multiplayerModal">
     <div class="modal-card mp-modal-card">
       <div class="modal-header">
-        <h2>🌐 Multiplayer Lobby (2-PC Human vs Human)</h2>
+        <h2>🌐 Multiplayer Lobby (2-Device Human vs Human)</h2>
         <button class="close-btn" id="btnCloseMpModal">✕</button>
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          Connect two different PCs directly! Both players use the standard keyboard controls (<code>WASD</code> + <code>J/U/H/Y/K/L/O/I/P</code>) on their own PC.
+          Connect two different devices (PC or Mobile) directly! Create a Room Code on Device 1 and enter it on Device 2.
         </p>
 
         <!-- Method Switcher Tabs -->
@@ -381,9 +394,9 @@
           <div class="mp-grid">
             <!-- Host Box (PC 1) -->
             <div class="mp-box host-box">
-              <div class="mp-box-badge p1-badge">PC 1 — HOST (SHADOW)</div>
+              <div class="mp-box-badge p1-badge">DEVICE 1 — HOST (SHADOW)</div>
               <h3>Create a Match Room</h3>
-              <p>Click below to generate a 6-character Room Code and share it with PC 2.</p>
+              <p>Click below to generate a 6-character Room Code and share it with Player 2.</p>
               <button id="btnCreateRoom" class="gameover-btn mp-action-btn">🏠 Create Room Code</button>
               <div class="room-code-display" id="hostRoomCodeWrap" style="display: none;">
                 <span class="code-label">ROOM CODE:</span>
@@ -391,15 +404,15 @@
                   <span class="room-code-text" id="hostRoomCodeText">------</span>
                   <button id="btnCopyRoomCode" class="action-btn">📋 Copy</button>
                 </div>
-                <span class="waiting-hint" id="hostWaitingText">⏳ Waiting for PC 2 to join...</span>
+                <span class="waiting-hint" id="hostWaitingText">⏳ Waiting for Player 2 to join...</span>
               </div>
             </div>
 
             <!-- Join Box (PC 2) -->
             <div class="mp-box join-box">
-              <div class="mp-box-badge p2-badge">PC 2 — GUEST (VIPER)</div>
+              <div class="mp-box-badge p2-badge">DEVICE 2 — GUEST (VIPER)</div>
               <h3>Join Friend's Room</h3>
-              <p>Enter the 6-character Room Code from PC 1 to connect and start fighting!</p>
+              <p>Enter the 6-character Room Code from Player 1 to connect and start fighting!</p>
               <div class="join-input-row">
                 <input type="text" id="joinRoomInput" class="mp-input" placeholder="Enter Code (e.g. A7K9X2)" maxlength="12" />
                 <button id="btnJoinRoom" class="gameover-btn mp-action-btn join">🚀 Join</button>
@@ -413,23 +426,23 @@
         <div class="mp-section" id="sectionDirectLan" style="display: none;">
           <div class="mp-lan-steps">
             <div class="lan-step">
-              <strong>Step 1 (PC 1 — Host):</strong> Click <button id="btnLanCreateOffer" class="action-btn">1. Generate Offer Key</button>, copy the key below, and send it to PC 2:
+              <strong>Step 1 (Host):</strong> Click <button id="btnLanCreateOffer" class="action-btn">1. Generate Offer Key</button>, copy the key below, and send it to Player 2:
               <textarea id="lanOfferOut" class="mp-textarea" readonly placeholder="Offer Key will appear here..."></textarea>
             </div>
             <div class="lan-step">
-              <strong>Step 2 (PC 2 — Guest):</strong> Paste PC 1's Offer Key here and click <button id="btnLanCreateAnswer" class="action-btn">2. Generate Answer Key</button>, then send the Answer Key back to PC 1:
-              <textarea id="lanOfferIn" class="mp-textarea" placeholder="PC 2: Paste Offer Key here..."></textarea>
-              <textarea id="lanAnswerOut" class="mp-textarea" readonly placeholder="PC 2: Copy this Answer Key back to PC 1..."></textarea>
+              <strong>Step 2 (Guest):</strong> Paste Offer Key here and click <button id="btnLanCreateAnswer" class="action-btn">2. Generate Answer Key</button>, then send the Answer Key back to Host:
+              <textarea id="lanOfferIn" class="mp-textarea" placeholder="Guest: Paste Offer Key here..."></textarea>
+              <textarea id="lanAnswerOut" class="mp-textarea" readonly placeholder="Guest: Copy this Answer Key back to Host..."></textarea>
             </div>
             <div class="lan-step">
-              <strong>Step 3 (PC 1 — Host):</strong> Paste PC 2's Answer Key here and click <button id="btnLanAcceptAnswer" class="action-btn">3. Connect &amp; Start</button>:
-              <textarea id="lanAnswerIn" class="mp-textarea" placeholder="PC 1: Paste Answer Key here..."></textarea>
+              <strong>Step 3 (Host):</strong> Paste Answer Key here and click <button id="btnLanAcceptAnswer" class="action-btn">3. Connect &amp; Start</button>:
+              <textarea id="lanAnswerIn" class="mp-textarea" placeholder="Host: Paste Answer Key here..."></textarea>
             </div>
           </div>
         </div>
 
         <div class="mp-status-footer" id="mpStatusBanner">
-          Status: Not connected. Choose Host on PC 1 and Guest on PC 2.
+          Status: Not connected. Choose Host on Device 1 and Guest on Device 2.
         </div>
       </div>
     </div>

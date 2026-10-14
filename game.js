@@ -1719,31 +1719,182 @@ class StickmanGame {
       this.keyState[e.code] = false;
     });
 
-    // Mobile Touch Gamepad multi-touch & click bindings
-    document.querySelectorAll('.m-btn').forEach((btn) => {
-      const code = btn.dataset.key;
-      const press = (e) => {
+    // Orientation Gate Check (Forces Rotate Phone screen on mobile portrait)
+    this.isPortraitBlocked = false;
+    const checkOrientation = () => {
+      const isMobileScreen = window.innerWidth <= 1024 || ('ontouchstart' in window);
+      const isPortrait = window.innerHeight > window.innerWidth;
+      this.isPortraitBlocked = isMobileScreen && isPortrait;
+      const rotOverlay = document.getElementById('rotatePhoneOverlay');
+      if (rotOverlay) {
+        rotOverlay.classList.toggle('active', this.isPortraitBlocked);
+      }
+    };
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    checkOrientation();
+
+    // Fullscreen Button & Auto-Landscape Lock Helper
+    this.tryFullscreen = () => {
+      const el = document.documentElement;
+      if (!document.fullscreenElement && el.requestFullscreen) {
+        el.requestFullscreen().then(() => {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+          }
+        }).catch(() => {});
+      }
+    };
+
+    const btnFs = document.getElementById('btnFullscreen');
+    if (btnFs) {
+      btnFs.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          this.tryFullscreen();
+        } else if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+    }
+
+    // --- Left Virtual Analog Joystick ---
+    const joyZone = document.getElementById('joystickZone');
+    const joyBase = document.getElementById('joystickBase');
+    const joyStick = document.getElementById('joystickStick');
+    let joyTouchId = null;
+
+    const updateJoystick = (clientX, clientY) => {
+      const rect = joyBase.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const dx = clientX - centerX;
+      const dy = clientY - centerY;
+      const dist = Math.hypot(dx, dy);
+      const maxRadius = 40;
+      const angle = Math.atan2(dy, dx);
+      const clampedDist = Math.min(dist, maxRadius);
+      const stickX = Math.cos(angle) * clampedDist;
+      const stickY = Math.sin(angle) * clampedDist;
+
+      joyStick.style.transform = `translate(${stickX}px, ${stickY}px)`;
+
+      // Map analog joystick position to movement keys
+      this.keyState['KeyA'] = dx < -15;
+      this.keyState['KeyD'] = dx > 15;
+      this.keyState['KeyW'] = dy < -24;
+      this.keyState['KeyS'] = dy > 22;
+    };
+
+    const resetJoystick = () => {
+      joyTouchId = null;
+      joyStick.style.transform = 'translate(0px, 0px)';
+      this.keyState['KeyA'] = false;
+      this.keyState['KeyD'] = false;
+      this.keyState['KeyW'] = false;
+      this.keyState['KeyS'] = false;
+    };
+
+    if (joyZone) {
+      joyZone.addEventListener('touchstart', (e) => {
         if (e.cancelable) e.preventDefault();
         this.sound.init();
-        this.keyState[code] = true;
-        btn.classList.add('pressed');
-      };
-      const release = (e) => {
+        const touch = e.changedTouches[0];
+        joyTouchId = touch.identifier;
+        updateJoystick(touch.clientX, touch.clientY);
+      }, { passive: false });
+
+      joyZone.addEventListener('touchmove', (e) => {
         if (e.cancelable) e.preventDefault();
-        this.keyState[code] = false;
-        btn.classList.remove('pressed');
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === joyTouchId) {
+            updateJoystick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+            break;
+          }
+        }
+      }, { passive: false });
+
+      const endJoy = (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === joyTouchId) {
+            resetJoystick();
+            break;
+          }
+        }
       };
-      btn.addEventListener('touchstart', press, { passive: false });
-      btn.addEventListener('touchend', release, { passive: false });
-      btn.addEventListener('touchcancel', release, { passive: false });
-      btn.addEventListener('mousedown', press);
-      btn.addEventListener('mouseup', release);
-      btn.addEventListener('mouseleave', release);
+      joyZone.addEventListener('touchend', endJoy, { passive: false });
+      joyZone.addEventListener('touchcancel', endJoy, { passive: false });
+    }
+
+    // --- Right Streamlined Fighting Buttons ---
+    let punchCycle = 0;
+    let kickCycle = 0;
+
+    const bindFightBtn = (id, onPress, onRelease) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      const start = (e) => {
+        if (e.cancelable) e.preventDefault();
+        this.sound.init();
+        btn.classList.add('pressed');
+        onPress();
+      };
+      const end = (e) => {
+        if (e.cancelable) e.preventDefault();
+        btn.classList.remove('pressed');
+        if (onRelease) onRelease();
+      };
+      btn.addEventListener('touchstart', start, { passive: false });
+      btn.addEventListener('touchend', end, { passive: false });
+      btn.addEventListener('touchcancel', end, { passive: false });
+      btn.addEventListener('mousedown', start);
+      btn.addEventListener('mouseup', end);
+      btn.addEventListener('mouseleave', end);
+    };
+
+    // Smart Punch Button: cycles Jab -> Cross -> Hook -> Uppercut
+    const punchKeys = ['KeyJ', 'KeyU', 'KeyH', 'KeyY'];
+    bindFightBtn('mBtnPunch', () => {
+      const k = punchKeys[punchCycle % punchKeys.length];
+      punchCycle++;
+      this.keyState[k] = true;
+    }, () => {
+      punchKeys.forEach(k => { this.keyState[k] = false; });
     });
 
-    document.getElementById('btnTouchToggle').addEventListener('click', () => {
-      const pad = document.getElementById('mobileTouchPad');
-      pad.classList.toggle('force-show');
+    // Smart Kick Button: cycles Low Kick -> High Roundhouse (or Sweep when crouching)
+    const kickKeys = ['KeyK', 'KeyL'];
+    bindFightBtn('mBtnKick', () => {
+      const k = this.keyState['KeyS'] ? 'KeyK' : kickKeys[kickCycle % kickKeys.length];
+      kickCycle++;
+      this.keyState[k] = true;
+    }, () => {
+      kickKeys.forEach(k => { this.keyState[k] = false; });
+    });
+
+    // Guard / Block Button
+    bindFightBtn('mBtnGuard', () => {
+      this.keyState['KeyI'] = true;
+    }, () => {
+      this.keyState['KeyI'] = false;
+    });
+
+    // Tactical Hop Button
+    bindFightBtn('mBtnHop', () => {
+      this.keyState['KeyQ'] = true;
+    }, () => {
+      this.keyState['KeyQ'] = false;
+    });
+
+    // Super / Flying Knee Button
+    bindFightBtn('mBtnSuper', () => {
+      if (this.p1.superMeter >= 100 || (this.gameMode === 'online' && this.net.role === 'guest' && this.p2.superMeter >= 100)) {
+        this.keyState['KeyP'] = true;
+      } else {
+        this.keyState['KeyO'] = true;
+      }
+    }, () => {
+      this.keyState['KeyP'] = false;
+      this.keyState['KeyO'] = false;
     });
 
     // --- Home Page Menu Navigation ---
@@ -1894,7 +2045,7 @@ class StickmanGame {
     document.getElementById('homeMenuOverlay').style.display = 'none';
     document.getElementById('gameHeader').style.display = 'flex';
     document.getElementById('matchHud').style.display = 'grid';
-    document.getElementById('mobileTouchPad').classList.add('in-match');
+    document.getElementById('mobileHudControls').classList.add('in-match');
 
     const aiLevelWrap = document.getElementById('aiLevelWrap');
     const btnNetLobby = document.getElementById('btnNetLobby');
@@ -1938,8 +2089,7 @@ class StickmanGame {
     document.getElementById('gameHeader').style.display = 'none';
     document.getElementById('matchHud').style.display = 'none';
     document.getElementById('homeMenuOverlay').style.display = 'flex';
-    const pad = document.getElementById('mobileTouchPad');
-    pad.classList.remove('in-match', 'force-show');
+    document.getElementById('mobileHudControls').classList.remove('in-match');
     document.getElementById('mainMenuPanel').style.display = 'flex';
     document.getElementById('startGameSubPanel').style.display = 'none';
   }
