@@ -1719,6 +1719,33 @@ class StickmanGame {
       this.keyState[e.code] = false;
     });
 
+    // Mobile Touch Gamepad multi-touch & click bindings
+    document.querySelectorAll('.m-btn').forEach((btn) => {
+      const code = btn.dataset.key;
+      const press = (e) => {
+        if (e.cancelable) e.preventDefault();
+        this.sound.init();
+        this.keyState[code] = true;
+        btn.classList.add('pressed');
+      };
+      const release = (e) => {
+        if (e.cancelable) e.preventDefault();
+        this.keyState[code] = false;
+        btn.classList.remove('pressed');
+      };
+      btn.addEventListener('touchstart', press, { passive: false });
+      btn.addEventListener('touchend', release, { passive: false });
+      btn.addEventListener('touchcancel', release, { passive: false });
+      btn.addEventListener('mousedown', press);
+      btn.addEventListener('mouseup', release);
+      btn.addEventListener('mouseleave', release);
+    });
+
+    document.getElementById('btnTouchToggle').addEventListener('click', () => {
+      const pad = document.getElementById('mobileTouchPad');
+      pad.classList.toggle('force-show');
+    });
+
     // --- Home Page Menu Navigation ---
     const mainMenuPanel = document.getElementById('mainMenuPanel');
     const startGameSubPanel = document.getElementById('startGameSubPanel');
@@ -1867,6 +1894,7 @@ class StickmanGame {
     document.getElementById('homeMenuOverlay').style.display = 'none';
     document.getElementById('gameHeader').style.display = 'flex';
     document.getElementById('matchHud').style.display = 'grid';
+    document.getElementById('mobileTouchPad').classList.add('in-match');
 
     const aiLevelWrap = document.getElementById('aiLevelWrap');
     const btnNetLobby = document.getElementById('btnNetLobby');
@@ -1910,6 +1938,8 @@ class StickmanGame {
     document.getElementById('gameHeader').style.display = 'none';
     document.getElementById('matchHud').style.display = 'none';
     document.getElementById('homeMenuOverlay').style.display = 'flex';
+    const pad = document.getElementById('mobileTouchPad');
+    pad.classList.remove('in-match', 'force-show');
     document.getElementById('mainMenuPanel').style.display = 'flex';
     document.getElementById('startGameSubPanel').style.display = 'none';
   }

@@ -42,6 +42,7 @@
           </select>
         </div>
 
+        <button id="btnTouchToggle" class="icon-btn" title="Toggle Mobile Touch Controls">📱</button>
         <button id="btnSound" class="icon-btn" title="Toggle Sound">🔊</button>
         <button id="btnControlsHeader" class="action-btn" title="View Controls">⌨️ Controls</button>
         <button id="btnRestart" class="action-btn restart" title="Restart Match">🔄 Restart</button>
@@ -182,6 +183,38 @@
       <!-- Main Game Canvas -->
       <canvas id="gameCanvas" width="1280" height="720"></canvas>
     </div>
+
+    <!-- Mobile-Only Touch Gamepad (Hidden on PC, Auto-shown on Mobile/Touch Devices during Match) -->
+    <div class="mobile-touch-pad" id="mobileTouchPad">
+      <div class="m-dpad">
+        <div class="m-dpad-row">
+          <button class="m-btn m-hop" data-key="KeyQ">🦘 HOP</button>
+          <button class="m-btn m-dir" data-key="KeyW">⬆️ JUMP</button>
+          <button class="m-btn m-hop" data-key="Space">💨 DASH</button>
+        </div>
+        <div class="m-dpad-row">
+          <button class="m-btn m-dir" data-key="KeyA">⬅️</button>
+          <button class="m-btn m-dir" data-key="KeyS">⬇️ CROUCH</button>
+          <button class="m-btn m-dir" data-key="KeyD">➡️</button>
+        </div>
+      </div>
+
+      <div class="m-actions">
+        <div class="m-act-row">
+          <button class="m-btn m-sub" data-key="KeyH">HOOK</button>
+          <button class="m-btn m-sub" data-key="KeyY">UPPER</button>
+          <button class="m-btn m-sub" data-key="KeyO">KNEE</button>
+          <button class="m-btn m-super" data-key="KeyP">⚡ SUPER</button>
+        </div>
+        <div class="m-act-row">
+          <button class="m-btn m-atk" data-key="KeyJ">JAB</button>
+          <button class="m-btn m-atk" data-key="KeyU">CROSS</button>
+          <button class="m-btn m-atk" data-key="KeyK">LOW KICK</button>
+          <button class="m-btn m-atk" data-key="KeyL">HIGH KICK</button>
+          <button class="m-btn m-guard" data-key="KeyI">🛡️ GUARD</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- CONTROLS MODAL (Opened from Home Page "Controls" or In-Game Header) -->
@@ -319,7 +352,7 @@
         <h3 class="credits-game-title">STICKMAN STRIKE</h3>
         <p class="credits-game-sub">MARTIAL CLASH</p>
         <div class="credits-author-box">
-          <p class="credits-author-text">Developed by Adib Adnan, BSc in CSTE, NSTU.</p>
+          <p class="credits-author-text">Developed by Adib Adnan<br />CSTE-20, NSTU</p>
         </div>
       </div>
     </div>
