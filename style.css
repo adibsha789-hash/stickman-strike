@@ -617,9 +617,9 @@ html, body {
   width: 118px;
   height: 118px;
   border-radius: 50%;
-  background: rgba(14, 22, 38, 0.55);
-  border: 2px solid rgba(0, 229, 255, 0.4);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 229, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(0, 229, 255, 0.42);
+  box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -628,7 +628,7 @@ html, body {
 .joystick-dir-hint {
   position: absolute;
   font-size: 0.65rem;
-  color: rgba(0, 229, 255, 0.45);
+  color: rgba(255, 255, 255, 0.45);
   pointer-events: none;
 }
 .hint-up { top: 6px; left: 50%; transform: translateX(-50%); }
@@ -637,17 +637,17 @@ html, body {
 .hint-right { right: 8px; top: 50%; transform: translateY(-50%); }
 
 .joystick-stick {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #80d8ff 0%, #00b0ff 60%, #0077c2 100%);
-  border: 2px solid #ffffff;
-  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.6);
+  background: rgba(0, 229, 255, 0.22);
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
   transform: translate(0px, 0px);
   pointer-events: none;
 }
 
-/* Right Fighting Buttons Cluster (5 Essential Arcade Buttons) */
+/* Right Fighting Buttons Cluster (Transparent & Clearly Visible) */
 .mobile-fight-cluster {
   position: absolute;
   bottom: 18px;
@@ -666,37 +666,42 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #fff;
-  font-weight: 900;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
-  transition: transform 0.06s ease, filter 0.06s ease;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 800;
+  background: transparent;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.08);
+  transition: transform 0.06s ease, background 0.08s ease;
   touch-action: none;
 }
 
 .f-btn:active, .f-btn.pressed {
-  transform: scale(0.9);
-  filter: brightness(1.3);
+  transform: scale(0.91);
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff;
 }
 
 .f-icon {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   line-height: 1;
+  opacity: 0.8;
 }
 
 .f-label {
-  font-size: 0.56rem;
+  font-size: 0.54rem;
   letter-spacing: 0.05em;
   margin-top: 2px;
+  opacity: 0.85;
 }
 
-/* Primary Attack Buttons (Punch & Kick) */
+/* Primary Attack Buttons (Punch & Kick) — See-through 10% tint + crisp visible outline */
 .f-punch {
   width: 68px;
   height: 68px;
   bottom: 8px;
   right: 78px;
-  background: radial-gradient(circle, rgba(255, 23, 68, 0.85) 0%, rgba(183, 28, 28, 0.9) 100%);
-  border: 2px solid #ff8a80;
+  background: rgba(255, 23, 68, 0.10);
+  border: 2px solid rgba(255, 82, 82, 0.65);
 }
 
 .f-kick {
@@ -704,18 +709,18 @@ html, body {
   height: 68px;
   bottom: 24px;
   right: 2px;
-  background: radial-gradient(circle, rgba(255, 145, 0, 0.85) 0%, rgba(230, 81, 0, 0.9) 100%);
-  border: 2px solid #ffd180;
+  background: rgba(255, 145, 0, 0.10);
+  border: 2px solid rgba(255, 171, 64, 0.65);
 }
 
-/* Secondary Tactical Buttons (Guard, Hop, Super) arranged in an arc above Punch/Kick */
+/* Secondary Tactical Buttons (Guard, Hop, Super) */
 .f-guard {
   width: 56px;
   height: 56px;
   bottom: 66px;
   right: 142px;
-  background: radial-gradient(circle, rgba(0, 176, 255, 0.8) 0%, rgba(1, 87, 155, 0.9) 100%);
-  border: 2px solid #80d8ff;
+  background: rgba(0, 176, 255, 0.10);
+  border: 2px solid rgba(64, 196, 255, 0.65);
 }
 
 .f-hop {
@@ -723,8 +728,8 @@ html, body {
   height: 54px;
   bottom: 86px;
   right: 76px;
-  background: radial-gradient(circle, rgba(0, 230, 118, 0.8) 0%, rgba(0, 130, 65, 0.9) 100%);
-  border: 2px solid #b9f6ca;
+  background: rgba(0, 230, 118, 0.10);
+  border: 2px solid rgba(105, 240, 174, 0.65);
 }
 
 .f-super {
@@ -732,9 +737,9 @@ html, body {
   height: 56px;
   bottom: 98px;
   right: 8px;
-  background: radial-gradient(circle, rgba(255, 214, 0, 0.85) 0%, rgba(255, 111, 0, 0.9) 100%);
-  border: 2px solid #ffff8d;
-  color: #050811;
+  background: rgba(255, 214, 0, 0.12);
+  border: 2px solid rgba(255, 214, 0, 0.70);
+  color: rgba(255, 245, 157, 0.92);
 }
 
 /* Combo Banners */
