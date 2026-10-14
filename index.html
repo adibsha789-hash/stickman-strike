@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>STICKMAN STRIKE — MARTIAL CLASH</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- PeerJS for 2-PC Room Code WebRTC Multiplayer (gracefully degrades to Direct LAN WebRTC if offline) -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
+</head>
+<body>
+  <div class="game-wrapper">
+    <!-- Top In-Game Header Bar (Hidden on Home Menu, Shown in Match) -->
+    <header class="game-header" id="gameHeader" style="display: none;">
+      <div class="brand">
+        <span class="logo-icon">⚔️</span>
+        <h1 class="game-title">STICKMAN STRIKE <span class="tag">MARTIAL CLASH</span></h1>
+      </div>
+      <div class="header-actions">
+        <button id="btnMainMenu" class="action-btn" title="Return to Main Menu">🏠 Main Menu</button>
+
+        <!-- Network Status Pill (Visible in Multiplayer Mode) -->
+        <button id="btnNetLobby" class="action-btn net-btn" style="display: none;" title="Open Multiplayer Lobby">
+          <span class="net-dot" id="netStatusDot"></span>
+          <span id="netStatusText">Multiplayer Lobby</span>
+        </button>
+
+        <div class="difficulty-picker" id="formatPickerWrap">
+          <label for="matchFormat">Format:</label>
+          <select id="matchFormat">
+            <option value="1" selected>1 Round (Single Match)</option>
+            <option value="2">Best of 3 Rounds</option>
+          </select>
+        </div>
+
+        <div class="difficulty-picker" id="aiLevelWrap">
+          <label for="aiDifficulty">AI Level:</label>
+          <select id="aiDifficulty">
+            <option value="easy">Recruit (Easy)</option>
+            <option value="normal" selected>Warrior (Normal)</option>
+            <option value="hard">Master (Hard)</option>
+          </select>
+        </div>
+
+        <button id="btnSound" class="icon-btn" title="Toggle Sound">🔊</button>
+        <button id="btnControlsHeader" class="action-btn" title="View Controls">⌨️ Controls</button>
+        <button id="btnRestart" class="action-btn restart" title="Restart Match">🔄 Restart</button>
+      </div>
+    </header>
+
+    <!-- Main Arena Container -->
+    <div class="arena-container">
+      <!-- HOME PAGE / MAIN MENU OVERLAY (Shown immediately on app launch) -->
+      <div class="home-menu-overlay" id="homeMenuOverlay">
+        <div class="home-menu-card">
+          <div class="home-title-block">
+            <h1 class="home-main-title">STICKMAN STRIKE</h1>
+            <p class="home-sub-title">MARTIAL CLASH</p>
+          </div>
+
+          <!-- Primary Menu Options: Start Game, Controls, Credits -->
+          <div class="home-menu-buttons" id="mainMenuPanel">
+            <button class="menu-btn primary-menu-btn" id="btnMenuStartGame">⚔️ Start Game</button>
+            <button class="menu-btn" id="btnMenuControls">🎮 Controls</button>
+            <button class="menu-btn" id="btnMenuCredits">🏅 Credits</button>
+          </div>
+
+          <!-- Start Game Sub-Options: Offline (AI), Offline (PvP), Multiplayer -->
+          <div class="home-menu-buttons" id="startGameSubPanel" style="display: none;">
+            <div class="subpanel-label">SELECT GAME MODE</div>
+            <button class="menu-btn mode-select-btn" id="btnStartOfflineAI">
+              <span class="mode-title">🤖 Offline (AI)</span>
+              <span class="mode-desc">1 Player vs Tactical AI Opponent</span>
+            </button>
+            <button class="menu-btn mode-select-btn" id="btnStartOfflinePvP">
+              <span class="mode-title">⌨️ Offline (PvP)</span>
+              <span class="mode-desc">2 Players on Same PC (No AI)</span>
+            </button>
+            <button class="menu-btn mode-select-btn" id="btnStartMultiplayer">
+              <span class="mode-title">🌐 Multiplayer</span>
+              <span class="mode-desc">2 PCs via Room Code or LAN (No AI)</span>
+            </button>
+            <button class="menu-btn back-menu-btn" id="btnBackToMain">← Back</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HUD Overlay (Visible during active match) -->
+      <div class="hud" id="matchHud" style="display: none;">
+        <!-- Player 1 Status -->
+        <div class="fighter-hud p1-hud">
+          <div class="fighter-info">
+            <span class="fighter-name">SHADOW <span class="p-badge p1-badge" id="p1RoleBadge">P1 HUMAN</span></span>
+            <div class="rounds-won" id="p1Rounds">
+              <span class="round-dot"></span>
+              <span class="round-dot"></span>
+            </div>
+          </div>
+          <div class="bar-container hp-bar-wrap">
+            <div class="bar-chip" id="p1HpChip"></div>
+            <div class="bar-fill" id="p1HpFill"></div>
+            <div class="bar-val" id="p1HpVal">100%</div>
+          </div>
+          <div class="bar-container super-bar-wrap">
+            <div class="bar-fill super-fill" id="p1SuperFill"></div>
+            <span class="super-label" id="p1SuperLabel">SUPER 0%</span>
+          </div>
+          <div class="active-move-tag" id="p1MoveTag">READY</div>
+        </div>
+
+        <!-- Timer & Round Display -->
+        <div class="match-timer-box">
+          <div class="round-indicator" id="roundNumberTag">ROUND 1</div>
+          <div class="timer-countdown" id="timerCount">99</div>
+        </div>
+
+        <!-- Player 2 Status -->
+        <div class="fighter-hud p2-hud">
+          <div class="fighter-info reverse">
+            <span class="fighter-name"><span class="p-badge p2-badge" id="p2RoleBadge">AI</span> VIPER</span>
+            <div class="rounds-won" id="p2Rounds">
+              <span class="round-dot"></span>
+              <span class="round-dot"></span>
+            </div>
+          </div>
+          <div class="bar-container hp-bar-wrap">
+            <div class="bar-chip" id="p2HpChip"></div>
+            <div class="bar-fill" id="p2HpFill"></div>
+            <div class="bar-val" id="p2HpVal">100%</div>
+          </div>
+          <div class="bar-container super-bar-wrap">
+            <div class="bar-fill super-fill" id="p2SuperFill"></div>
+            <span class="super-label" id="p2SuperLabel">SUPER 0%</span>
+          </div>
+          <div class="active-move-tag" id="p2MoveTag">READY</div>
+        </div>
+      </div>
+
+      <!-- Combo Announcements -->
+      <div class="combo-banner p1-combo" id="p1ComboBanner">
+        <span class="combo-count">0</span>
+        <span class="combo-text">HITS!</span>
+      </div>
+      <div class="combo-banner p2-combo" id="p2ComboBanner">
+        <span class="combo-count">0</span>
+        <span class="combo-text">HITS!</span>
+      </div>
+
+      <!-- Announcer Banner Overlay -->
+      <div class="announcer-overlay" id="announcerOverlay">
+        <div class="announcer-title" id="announcerTitle">ROUND 1</div>
+        <div class="announcer-sub" id="announcerSub">FIGHT!</div>
+      </div>
+
+      <!-- Game Over / Match Victory Overlay -->
+      <div class="gameover-overlay" id="gameOverOverlay">
+        <div class="gameover-card">
+          <div class="gameover-badge" id="goBadge">GAME OVER</div>
+          <h2 class="gameover-winner" id="goWinnerTitle">SHADOW WINS!</h2>
+          <p class="gameover-subtitle" id="goSubtitle">Knockout Victory</p>
+          <div class="gameover-stats">
+            <div class="stat-item">
+              <span class="stat-label">Winner HP Left</span>
+              <span class="stat-value" id="goStatHp">84%</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Score (Rounds)</span>
+              <span class="stat-value" id="goStatScore">1 - 0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Max Combo</span>
+              <span class="stat-value" id="goStatCombo">5 Hits</span>
+            </div>
+          </div>
+          <div class="gameover-actions">
+            <button id="btnPlayAgain" class="gameover-btn primary">🔥 Play Again (Enter)</button>
+            <button id="btnGameOverMenu" class="gameover-btn secondary">🏠 Main Menu</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Game Canvas -->
+      <canvas id="gameCanvas" width="1280" height="720"></canvas>
+    </div>
+  </div>
+
+  <!-- CONTROLS MODAL (Opened from Home Page "Controls" or In-Game Header) -->
+  <div class="modal-backdrop" id="controlsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>🎮 Game Controls &amp; Martial Arts Move List</h2>
+        <button class="close-btn" id="btnCloseControlsModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          In <strong>Offline (AI)</strong> and <strong>Multiplayer (2-PC)</strong> modes, both players use the <strong>Player 1 Standard Keys</strong> on their own PC. In <strong>Offline (PvP)</strong> on a single PC, Player 1 uses the left side of the keyboard and Player 2 uses the Arrow &amp; Numpad/Right-side keys.
+        </p>
+
+        <div class="controls-summary-grid">
+          <div class="control-group-card">
+            <h3>🏃 Movement &amp; Footwork</h3>
+            <ul class="key-list">
+              <li><span>Walk Left / Right</span> <span><kbd class="key-pill">A</kbd> / <kbd class="key-pill">D</kbd> <small>(P2: <kbd class="key-pill">←</kbd> / <kbd class="key-pill">→</kbd>)</small></span></li>
+              <li><span>High Jump</span> <span><kbd class="key-pill hop-pill">W</kbd> <small>(P2: <kbd class="key-pill hop-pill">↑</kbd>)</small></span></li>
+              <li><span>Tactical Hop (Evade Sweep)</span> <span><kbd class="key-pill hop-pill">Q</kbd> <small>(P2: <kbd class="key-pill hop-pill">Right Shift</kbd>)</small></span></li>
+              <li><span>Crouch / Duck</span> <span><kbd class="key-pill">S</kbd> <small>(P2: <kbd class="key-pill">↓</kbd>)</small></span></li>
+              <li><span>Evasive Dash</span> <span><kbd class="key-pill">Space</kbd> <small>(P2: <kbd class="key-pill">Enter</kbd>)</small></span></li>
+            </ul>
+          </div>
+
+          <div class="control-group-card">
+            <h3>🛡️ Defense &amp; Special</h3>
+            <ul class="key-list">
+              <li><span>Standing High Guard (Block)</span> <span><kbd class="key-pill">I</kbd> (Hold) <small>(P2: <kbd class="key-pill">Num 0</kbd> / <kbd class="key-pill">'</kbd>)</small></span></li>
+              <li><span>Crouching Low Guard</span> <span><kbd class="key-pill">S</kbd> + <kbd class="key-pill">I</kbd> <small>(P2: <kbd class="key-pill">↓</kbd> + <kbd class="key-pill">Num 0</kbd>)</small></span></li>
+              <li><span>Dragon Blitz (100% Super)</span> <span><kbd class="key-pill super-pill">P</kbd> <small>(P2: <kbd class="key-pill super-pill">Num 9</kbd> / <kbd class="key-pill">\</kbd>)</small></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="move-table-container">
+          <table class="move-table">
+            <thead>
+              <tr>
+                <th>Martial Arts Move</th>
+                <th>Discipline</th>
+                <th>P1 / 2-PC Key</th>
+                <th>Offline PvP (P2 Key)</th>
+                <th>Damage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Lead Jab</strong></td>
+                <td>Boxing</td>
+                <td><span class="key-pill">J</span></td>
+                <td><span class="key-pill">Numpad 1</span> or <span class="key-pill">,</span></td>
+                <td>2.5%</td>
+              </tr>
+              <tr>
+                <td><strong>Rear Cross</strong></td>
+                <td>Boxing</td>
+                <td><span class="key-pill">U</span></td>
+                <td><span class="key-pill">Numpad 4</span> or <span class="key-pill">.</span></td>
+                <td>4.5%</td>
+              </tr>
+              <tr>
+                <td><strong>Lead Hook</strong></td>
+                <td>Boxing</td>
+                <td><span class="key-pill">H</span></td>
+                <td><span class="key-pill">Numpad 5</span> or <span class="key-pill">/</span></td>
+                <td>5.5%</td>
+              </tr>
+              <tr>
+                <td><strong>Rising Uppercut</strong></td>
+                <td>Boxing</td>
+                <td><span class="key-pill">Y</span></td>
+                <td><span class="key-pill">Numpad 6</span> or <span class="key-pill">;</span></td>
+                <td>6.5%</td>
+              </tr>
+              <tr>
+                <td><strong>Muay Thai Leg Kick</strong></td>
+                <td>Muay Thai</td>
+                <td><span class="key-pill">K</span></td>
+                <td><span class="key-pill">Numpad 2</span> or <span class="key-pill">[</span></td>
+                <td>3.5%</td>
+              </tr>
+              <tr>
+                <td><strong>Crouching Leg Sweep</strong></td>
+                <td>Taekwondo</td>
+                <td><span class="key-pill">S</span> + <span class="key-pill">K</span></td>
+                <td><span class="key-pill">↓</span> + <span class="key-pill">Numpad 2</span></td>
+                <td>5.0% (Knockdown)</td>
+              </tr>
+              <tr>
+                <td><strong>High Roundhouse Kick</strong></td>
+                <td>Kickboxing</td>
+                <td><span class="key-pill">L</span></td>
+                <td><span class="key-pill">Numpad 3</span> or <span class="key-pill">]</span></td>
+                <td>7.5%</td>
+              </tr>
+              <tr>
+                <td><strong>Aerial Flying Kick</strong></td>
+                <td>Martial Arts</td>
+                <td><span class="key-pill hop-pill">W</span> + <span class="key-pill">K</span> / <span class="key-pill">L</span></td>
+                <td><span class="key-pill hop-pill">↑</span> + <span class="key-pill">Num 2</span> / <span class="key-pill">3</span></td>
+                <td>6.0%</td>
+              </tr>
+              <tr>
+                <td><strong>Flying Knee Strike</strong></td>
+                <td>Muay Thai</td>
+                <td><span class="key-pill">O</span></td>
+                <td><span class="key-pill">Numpad 7</span> or <span class="key-pill">-</span></td>
+                <td>8.5%</td>
+              </tr>
+              <tr class="highlight-row">
+                <td><strong>Dragon Blitz (SUPER)</strong></td>
+                <td>Special</td>
+                <td><span class="key-pill super-pill">P</span> (100% Meter)</td>
+                <td><span class="key-pill super-pill">Numpad 9</span> or <span class="key-pill">\</span></td>
+                <td>15.0% (3-Hit Flurry)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREDITS MODAL (Opened from Home Page "Credits") -->
+  <div class="modal-backdrop" id="creditsModal">
+    <div class="modal-card credits-modal-card">
+      <div class="modal-header">
+        <h2>🏅 Credits</h2>
+        <button class="close-btn" id="btnCloseCreditsModal">✕</button>
+      </div>
+      <div class="modal-body credits-body">
+        <div class="credits-emblem">⚔️</div>
+        <h3 class="credits-game-title">STICKMAN STRIKE</h3>
+        <p class="credits-game-sub">MARTIAL CLASH</p>
+        <div class="credits-author-box">
+          <p class="credits-author-text">Developed by Adib Adnan, BSc in CSTE, NSTU.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2-PC MULTIPLAYER CONNECTION MODAL -->
+  <div class="modal-backdrop" id="multiplayerModal">
+    <div class="modal-card mp-modal-card">
+      <div class="modal-header">
+        <h2>🌐 Multiplayer Lobby (2-PC Human vs Human)</h2>
+        <button class="close-btn" id="btnCloseMpModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Connect two different PCs directly! Both players use the standard keyboard controls (<code>WASD</code> + <code>J/U/H/Y/K/L/O/I/P</code>) on their own PC.
+        </p>
+
+        <!-- Method Switcher Tabs -->
+        <div class="mp-tabs">
+          <button class="mp-tab active" id="tabRoomCode">⚡ Instant Room Code (Internet)</button>
+          <button class="mp-tab" id="tabDirectLan">🔌 Offline LAN / Manual Key</button>
+        </div>
+
+        <!-- TAB 1: Instant Room Code (PeerJS) -->
+        <div class="mp-section" id="sectionRoomCode">
+          <div class="mp-grid">
+            <!-- Host Box (PC 1) -->
+            <div class="mp-box host-box">
+              <div class="mp-box-badge p1-badge">PC 1 — HOST (SHADOW)</div>
+              <h3>Create a Match Room</h3>
+              <p>Click below to generate a 6-character Room Code and share it with PC 2.</p>
+              <button id="btnCreateRoom" class="gameover-btn mp-action-btn">🏠 Create Room Code</button>
+              <div class="room-code-display" id="hostRoomCodeWrap" style="display: none;">
+                <span class="code-label">ROOM CODE:</span>
+                <div class="code-row">
+                  <span class="room-code-text" id="hostRoomCodeText">------</span>
+                  <button id="btnCopyRoomCode" class="action-btn">📋 Copy</button>
+                </div>
+                <span class="waiting-hint" id="hostWaitingText">⏳ Waiting for PC 2 to join...</span>
+              </div>
+            </div>
+
+            <!-- Join Box (PC 2) -->
+            <div class="mp-box join-box">
+              <div class="mp-box-badge p2-badge">PC 2 — GUEST (VIPER)</div>
+              <h3>Join Friend's Room</h3>
+              <p>Enter the 6-character Room Code from PC 1 to connect and start fighting!</p>
+              <div class="join-input-row">
+                <input type="text" id="joinRoomInput" class="mp-input" placeholder="Enter Code (e.g. A7K9X2)" maxlength="12" />
+                <button id="btnJoinRoom" class="gameover-btn mp-action-btn join">🚀 Join</button>
+              </div>
+              <span class="waiting-hint" id="guestStatusText"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: Offline LAN / Direct WebRTC SDP Exchange -->
+        <div class="mp-section" id="sectionDirectLan" style="display: none;">
+          <div class="mp-lan-steps">
+            <div class="lan-step">
+              <strong>Step 1 (PC 1 — Host):</strong> Click <button id="btnLanCreateOffer" class="action-btn">1. Generate Offer Key</button>, copy the key below, and send it to PC 2:
+              <textarea id="lanOfferOut" class="mp-textarea" readonly placeholder="Offer Key will appear here..."></textarea>
+            </div>
+            <div class="lan-step">
+              <strong>Step 2 (PC 2 — Guest):</strong> Paste PC 1's Offer Key here and click <button id="btnLanCreateAnswer" class="action-btn">2. Generate Answer Key</button>, then send the Answer Key back to PC 1:
+              <textarea id="lanOfferIn" class="mp-textarea" placeholder="PC 2: Paste Offer Key here..."></textarea>
+              <textarea id="lanAnswerOut" class="mp-textarea" readonly placeholder="PC 2: Copy this Answer Key back to PC 1..."></textarea>
+            </div>
+            <div class="lan-step">
+              <strong>Step 3 (PC 1 — Host):</strong> Paste PC 2's Answer Key here and click <button id="btnLanAcceptAnswer" class="action-btn">3. Connect &amp; Start</button>:
+              <textarea id="lanAnswerIn" class="mp-textarea" placeholder="PC 1: Paste Answer Key here..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="mp-status-footer" id="mpStatusBanner">
+          Status: Not connected. Choose Host on PC 1 and Guest on PC 2.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
